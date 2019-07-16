@@ -12,7 +12,7 @@ import numpy as np
 import math
 
 
-def train():
+def train(nseg):
 	Xtrain=np.load("x_train.npy")
 	Ytrain=np.load("y_train.npy")
 	Xtest=np.load("x_test.npy")
@@ -29,11 +29,11 @@ def train():
 
 	# create and fit the LSTM network
 	model = Sequential()
-	model.add(LSTM(4, input_shape=(10, 1)))
+	model.add(LSTM(4, input_shape=(nseg, 1)))
 	#model.add(LSTM(10))
 	model.add(Dense(1))
 	model.compile(loss='mean_squared_error', optimizer='adam',metrics=["accuracy"])
-	model.fit(Xtrain, Ytrain, epochs=10, batch_size=1, verbose=1,validation_data=(Xtest,Ytest))
+	model.fit(Xtrain, Ytrain, epochs=5, batch_size=1, verbose=1,validation_data=(Xtest,Ytest))
 
 
 	model_json = model.to_json()
@@ -101,11 +101,7 @@ def prediction_some_point():
 
 
 
-def prediction_all_curve():
-
-	Xtest=np.load("x_test.npy")
-	Ytest=np.load("y_test.npy")
-	Xtest=Xtest.reshape((Xtest.shape[0],Xtest.shape[1],1))
+def prediction_all_curve(nseg):
 
 
 	# load json and create model
@@ -125,8 +121,8 @@ def prediction_all_curve():
 	list_pred=[]
 	n=1500
 	for i in range(n):
-		vec=action_list[i:i+10]
-		vec=vec.reshape((1,10,1))
+		vec=action_list[i:i+nseg]
+		vec=vec.reshape((1,nseg,1))
 		action_tpun=trained_network.predict(vec)[0][0]
 		if action_tpun>0.5:
 			list_pred.append(1)
@@ -136,13 +132,13 @@ def prediction_all_curve():
 			list_pred.append(-1)
 	list_pred=np.array(list_pred)
 
-	print(len(prices[10:n+10]),len(list_pred))
+	print(len(prices[nseg:n+nseg]),len(list_pred))
 	
 
 	cptb=0
 	cpts=0
 	plt.figure(2)
-	for i in range(len(prices[10:n+10])):
+	for i in range(len(prices[nseg:n+nseg])):
 		if list_pred[i]==-1:
 			if cptb==0:
 				plt.axvline(i,color="y",label="buy")
@@ -155,7 +151,7 @@ def prediction_all_curve():
 			if cpts>0:
 				plt.axvline(i,color="c")
 			cpts=cpts+1
-	plt.plot(prices[10:n+10])
+	plt.plot(prices[nseg:n+nseg])
 
 	plt.legend()
 
@@ -188,8 +184,8 @@ def check_bad_prediction():
 	list_pred=[]
 	n=1500
 	for i in range(n):
-		vec=action_list[i:i+10]
-		vec=vec.reshape((1,10,1))
+		vec=action_list[i:i+nseg]
+		vec=vec.reshape((1,nseg,1))
 		action_tpun=trained_network.predict(vec)[0][0]
 		if action_tpun>0.5:
 			list_pred.append(1)
@@ -204,20 +200,20 @@ def check_bad_prediction():
 	cptgood=0
 	plt.figure(3)
 	for i in range(len(list_pred)):
-		if action_list[i+10]!=list_pred[i]:
+		if action_list[i+nseg]!=list_pred[i]:
 			if cptbad==0:
 				plt.axvline(i,color="r",label="bad")
 			if cptbad>0:
 				plt.axvline(i,color="r")
 			cptbad=cptbad+1
-		if action_list[i+10]==list_pred[i]:
+		if action_list[i+nseg]==list_pred[i]:
 			if cptgood==0:
 				plt.axvline(i,color="g",label="good")
 			if cptgood>0:
 				plt.axvline(i,color="g")
 			cptgood=cptgood+1
 
-	plt.plot(prices[10:n+10])
+	plt.plot(prices[nseg:n+nseg])
 	print("There are ",cptbad," bad predictions over ",len(list_pred)," points so ",cptbad*100/len(list_pred)," % of bad predictions")
 
 	plt.legend()
@@ -226,15 +222,12 @@ def check_bad_prediction():
 
 
 
-def simulation_gain():
+def simulation_gain(nseg):
 	
 	real_price=np.load("real_prices_test_all_curve.npy")
 	prices=np.load("prices_test_all_curve.npy")
 	action_list=np.load("action_test_all_curve.npy")
 
-	Xtest=np.load("x_test.npy")
-	Ytest=np.load("y_test.npy")
-	Xtest=Xtest.reshape((Xtest.shape[0],Xtest.shape[1],1))
 
 
 	# load json and create model
@@ -257,8 +250,8 @@ def simulation_gain():
 	list_pred=[]
 	n=4000
 	for i in range(n):
-		vec=action_list[i:i+10]
-		vec=vec.reshape((1,10,1))
+		vec=action_list[i:i+nseg]
+		vec=vec.reshape((1,nseg,1))
 		action_tpun=trained_network.predict(vec)[0][0]
 		if action_tpun>0.5:
 			list_pred.append(1)
@@ -302,7 +295,7 @@ def simulation_gain():
 	for i in range(n):
 		if list_pred[i]==-1 and achatOK==0:
 			# We buy
-			real_price_local=real_price[i+10]
+			real_price_local=real_price[i+nseg]
 			nbitcoin_local=budget_depart/real_price_local 
 			budget_depart=0
 			achatOK=1
@@ -312,7 +305,7 @@ def simulation_gain():
 			bitcoin_sans_fees.append(nbitcoin_local)
 		if list_pred[i]==1 and venteOK==0:
 			# We sell
-			real_price_local=real_price[i+10]
+			real_price_local=real_price[i+nseg]
 			budget_depart=nbitcoin_local*real_price_local 
 			nbitcoin_local=0
 			venteOK=1
@@ -333,7 +326,8 @@ def simulation_gain():
 	print("################################################################################################################# ")
 	print(" ")
 	print(" ")
-	budget_depart=100 # euros
+	Mise=100
+	budget_depart=Mise # euros
 	nbitcoin_local=0
 	transaction_price=0.26/100
 	euros_avec_fees=[]
@@ -344,7 +338,7 @@ def simulation_gain():
 	for i in range(n):
 		if list_pred[i]==-1 and achatOK==0:
 			# We buy
-			real_price_local=real_price[i+10]
+			real_price_local=real_price[i+nseg]
 			nbitcoin_local_before=budget_depart/real_price_local 
 			nbitcoin_local=nbitcoin_local_before - transaction_price*nbitcoin_local_before
 			budget_depart=0
@@ -355,7 +349,7 @@ def simulation_gain():
 			bitcoin_avec_fees.append(nbitcoin_local)
 		if list_pred[i]==1 and venteOK==0:
 			# We sell
-			real_price_local=real_price[i+10]
+			real_price_local=real_price[i+nseg]
 			budget_depart_before=nbitcoin_local*real_price_local 
 			budget_depart = budget_depart_before - transaction_price*budget_depart_before
 			nbitcoin_local=0
@@ -373,6 +367,8 @@ def simulation_gain():
 	ax=plt.subplot(2,1,1)
 	ax.plot(euros_sans_fees,c="b",ls=":",label="sans fees")
 	ax.plot(euros_avec_fees,c="b",ls="-",label="avec fees")
+	ax.axhline(Mise,color="r")
+	ax.axhline(1.2*Mise,color="r",ls=":")
 	ax.get_xaxis().set_visible(False)
 	ax.set_ylabel("Euros")
 
@@ -394,8 +390,9 @@ def simulation_gain():
 #####################################################################
 
 
+nseg=10
 
-#train()
+#train(nseg)
 
 
 #prediction_some_point()
@@ -407,7 +404,7 @@ def simulation_gain():
 #check_bad_prediction()
 
 
-simulation_gain()
+simulation_gain(nseg)
 
 
 plt.show()

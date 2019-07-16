@@ -7,14 +7,25 @@ from scipy.ndimage import gaussian_filter
 
 
 
-
+def check_action(action_list):
+		cptfirstaction=0
+		for i in range(len(action_list)):
+			if action_list[i]!=0 and cptfirstaction==0:
+				print(" i = ",i," premiere action = ",action_list[i])
+				cptfirstaction=1
+		action_list=action_list[::-1]
+		cptfirstaction=0
+		for i in range(len(action_list)):
+			if action_list[i]!=0 and cptfirstaction==0:
+				print(" i = ",i," derniere action = ",action_list[i])
+				cptfirstaction=1
 
 
 def transform_curve():
 	###########################################################
 	# Points are given every 5 minutes for the bitcoin prices 
 	###########################################################
-	prices=np.fromfile("prices")[0:200]
+	prices=np.fromfile("prices")[0:198]
 	print ("Taking ",len(prices)," points on the curve")
 	minp=np.min(prices)
 	maxp=np.max(prices)
@@ -55,6 +66,7 @@ def transform_curve():
 	print("There are ",cptmin," min and ",cptmax," max")	
 	
 
+	check_action(action_list)
 
 	plt.figure(1)
 	#plt.plot(prices,c="b",ls="--",label="original")
@@ -116,7 +128,7 @@ def generate_ICs(ideptrain,ifintrain,ideptest,ifintest,ntraining,ntesting,sizese
 	maxp=np.max(prices)
 	pricess=(prices-minp)/(maxp-minp)
 	factor=-minp/(maxp-minp)
-	smoothed_prices=gaussian_filter(pricess, sigma=3)
+	smoothed_prices=gaussian_filter(pricess, sigma=100)
 	
 	first_deriv=np.gradient(smoothed_prices)
 	minderiv=np.min(first_deriv)
@@ -278,7 +290,7 @@ def generate_ICs(ideptrain,ifintrain,ideptest,ifintest,ntraining,ntesting,sizese
 #
 ############################################################################################
 
-#transform_curve()
+transform_curve()
 
 
 
@@ -289,12 +301,12 @@ ideptest=11000
 ifintest=16000
 
 ntraining=1000
-ntesting=10000
+ntesting=100
 
 sizeseg=10
 
 
-generate_ICs(ideptrain,ifintrain,ideptest,ifintest,ntraining,ntesting,sizeseg)
+#generate_ICs(ideptrain,ifintrain,ideptest,ifintest,ntraining,ntesting,sizeseg)
 
 
 plt.show()
